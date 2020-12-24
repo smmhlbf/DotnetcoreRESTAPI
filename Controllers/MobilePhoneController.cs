@@ -51,6 +51,7 @@ namespace DotnetcoreRESTAPI.Controllers
             _repository.UpdateMobilePhone(update);
             return Ok("更新成功！");
         }
+        [HttpDelete("{id}")]
         public ActionResult DeleteOne(Guid id)
         {
             var existMobilePhone = _repository.GetMobilePhone(id);

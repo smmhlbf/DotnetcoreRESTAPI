@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DotnetcoreRESTAPI.Repositories;
 using DotnetcoreRESTAPI.Services;
+using DotnetcoreRESTAPI.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver;
 
 namespace DotnetcoreRESTAPI
 {
@@ -28,8 +26,13 @@ namespace DotnetcoreRESTAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
+            BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 
-            services.AddSingleton<IRepository,InMemoryRepository>();
+            var mongodbSetting = Configuration.GetSection("MongoDBSettings").Get<MongoDBSetting>();
+            services.AddSingleton<IMongoClient>(ServiceProvider => new MongoClient(mongodbSetting.ConnectionString));
+            services.AddSingleton<IRepository,MongoDBRepository>();
+            //services.AddSingleton<IRepository,InMemoryRepository>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

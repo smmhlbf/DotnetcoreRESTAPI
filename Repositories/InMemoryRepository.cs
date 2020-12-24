@@ -25,7 +25,7 @@ namespace DotnetcoreRESTAPI.Repositories
                 });
             }
         }
-        public List<MobilePhone> GetMobilePhones() => _repository;
+        public IEnumerable<MobilePhone> GetMobilePhones() => _repository;
         public MobilePhone GetMobilePhone(Guid id) => _repository.Where(i => i.Id == id).SingleOrDefault();
 
         public void CreateMobilePhone(MobilePhone mobilePhone) => _repository.Add(mobilePhone);
