@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using DotnetcoreRESTAPI.Models;
 using DotnetcoreRESTAPI.Services;
 using MongoDB.Bson;
@@ -15,15 +16,29 @@ namespace DotnetcoreRESTAPI.Repositories
         private FilterDefinitionBuilder<MobilePhone> filterBuilder = Builders<MobilePhone>.Filter;
         public MongoDBRepository(IMongoClient mongoClient)
         => collection = mongoClient.GetDatabase(DatabaseName).GetCollection<MobilePhone>(CollectionName);
-        public void CreateMobilePhone(MobilePhone mobilePhone) => collection.InsertOne(mobilePhone);
+        #region Sync module
+        // public void CreateMobilePhoneAsync(MobilePhone mobilePhone) => collection.InsertOne(mobilePhone);
 
-        public void DeleteMobilePhone(Guid id) => collection.DeleteOne(filterBuilder.Eq(i => i.Id, id));
+        // public void DeleteMobilePhoneAsync(Guid id) => collection.DeleteOne(filterBuilder.Eq(i => i.Id, id));
 
-        public MobilePhone GetMobilePhone(Guid id) => collection.Find(i => i.Id == id).SingleOrDefault();
+        // public MobilePhone GetMobilePhoneAsync(Guid id) => collection.Find(i => i.Id == id).SingleOrDefault();
 
-        public IEnumerable<MobilePhone> GetMobilePhones() => collection.Find(new BsonDocument()).ToEnumerable();
+        // public IEnumerable<MobilePhone> GetMobilePhonesAsync() => collection.Find(new BsonDocument()).ToEnumerable();
 
-        public void UpdateMobilePhone(MobilePhone mobilePhone)
-        => collection.ReplaceOne(filterBuilder.Eq(i => i.Id, mobilePhone.Id), mobilePhone);
+        // public void UpdateMobilePhoneAsync(MobilePhone mobilePhone)
+        // => collection.ReplaceOne(filterBuilder.Eq(i => i.Id, mobilePhone.Id), mobilePhone);
+        #endregion
+        #region Async module
+        public async Task CreateMobilePhoneAsync(MobilePhone mobilePhone) => await collection.InsertOneAsync(mobilePhone);
+
+        public async Task DeleteMobilePhoneAsync(Guid id) => await collection.DeleteOneAsync(filterBuilder.Eq(i => i.Id, id));
+
+        public async Task<MobilePhone> GetMobilePhoneAsync(Guid id) => await collection.Find(i => i.Id == id).SingleOrDefaultAsync();
+
+        public async Task<IEnumerable<MobilePhone>> GetMobilePhonesAsync() => await collection.Find(new BsonDocument()).ToListAsync();
+
+        public async Task UpdateMobilePhoneAsync(MobilePhone mobilePhone)
+        => await collection.ReplaceOneAsync(filterBuilder.Eq(i => i.Id, mobilePhone.Id), mobilePhone);
+        #endregion
     }
 }
