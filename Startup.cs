@@ -1,8 +1,14 @@
+using System;
+using System.Linq;
+using System.Net.Mime;
+using System.Text.Json;
 using DotnetcoreRESTAPI.Repositories;
 using DotnetcoreRESTAPI.Services;
 using DotnetcoreRESTAPI.Settings;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +44,12 @@ namespace DotnetcoreRESTAPI
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "DotnetcoreRESTAPI", Version = "v1" });
             });
+            services.AddHealthChecks().AddMongoDb(
+                mongodbSetting.ConnectionString,
+                name: "mongodb",
+                timeout: TimeSpan.FromSeconds(2),
+                tags: new [] { "ready" }
+            );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,6 +71,31 @@ namespace DotnetcoreRESTAPI
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                //Check secvices cloud is living
+                endpoints.MapHealthChecks("/health/living", new HealthCheckOptions{ Predicate = (_) =>false});
+                endpoints.MapHealthChecks("/health/running", new HealthCheckOptions
+                { 
+                    Predicate = (check) =>check.Tags.Contains("ready"),
+                    ResponseWriter = async (context, report) =>
+                    {
+                        var result = JsonSerializer.Serialize(
+                            report.Entries.Select(
+                                entity => 
+                                new
+                                {
+                                    name = entity.Key,
+                                    status = entity.Value.Status.ToString(),
+                                    code = context.Response.StatusCode,
+                                    exception = entity.Value.Exception != null ? entity.Value.Exception.Message.ToString() : "none",
+                                    duration = entity.Value.Duration.ToString() 
+                                }
+                            )
+                        );
+                        context.Response.ContentType = MediaTypeNames.Application.Json;
+                        await context.Response.WriteAsync(result);
+                    }
+                });
+
             });
         }
     }
